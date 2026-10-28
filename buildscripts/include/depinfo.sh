@@ -40,10 +40,12 @@ v_davs2=f50435051b72c168c2b566c544e27fcff71ba61a
 ## ffmpeg patches (see buildscripts/patches/): the DRA (GB/T 22726-2008,
 # DTMB digital TV audio) decoder port; libcavs O1 miscompile workaround;
 # NULL AEC handle guard; cavs sequence header resolution whitelist removal
-# (real-world DTMB streams declare non-whitelisted sizes, e.g. 720x404).
+# (real-world DTMB streams declare non-whitelisted sizes, e.g. 720x404);
+# libcavs flush pipeline reset + interlaced TOP_FIELD_FIRST + I-frame KEY flag
+# (aligned with the reference libcavs implementation).
 # Applied to the ffmpeg checkout in include/download-deps.sh.
 # Bump to invalidate the CI cache.
-v_ffmpeg_patch=8
+v_ffmpeg_patch=9
 
 
 ## Dependency tree

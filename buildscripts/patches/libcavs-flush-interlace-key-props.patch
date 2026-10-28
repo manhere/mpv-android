@@ -1,0 +1,106 @@
+diff --git a/libavcodec/libcavsdec.c b/libavcodec/libcavsdec.c
+index 90dffbf..ed37b7a 100644
+--- a/libavcodec/libcavsdec.c
++++ b/libavcodec/libcavsdec.c
+@@ -33,6 +33,9 @@
+ #include "libcavs.h"
+ #include "startcode.h"
+ 
++/* AVS/AVS+ interlaced streams are top-field-first by default */
++#define AV_FRAME_FLAG_INTERLACED_TOP (AV_FRAME_FLAG_INTERLACED | AV_FRAME_FLAG_TOP_FIELD_FIRST)
++
+ #define SLICE_MAX_START_CODE    0x000001af
+ #define EXT_START_CODE          0x000001b5
+ #define USER_START_CODE         0x000001b2
+@@ -358,9 +361,9 @@ static int cavs_decode_seq_header(AVSContext *h)
+     h->avctx->width  = h->width;
+     h->avctx->height = h->height;
+ 
+-	h->cur.f->flags = h->b_interlaced ? AV_FRAME_FLAG_INTERLACED : 0;
+-	h->DPB[0].f->flags = h->b_interlaced ? AV_FRAME_FLAG_INTERLACED : 0;
+-	h->DPB[1].f->flags = h->b_interlaced ? AV_FRAME_FLAG_INTERLACED : 0;
++	h->cur.f->flags = h->b_interlaced ? AV_FRAME_FLAG_INTERLACED_TOP : 0;
++	h->DPB[0].f->flags = h->b_interlaced ? AV_FRAME_FLAG_INTERLACED_TOP : 0;
++	h->DPB[1].f->flags = h->b_interlaced ? AV_FRAME_FLAG_INTERLACED_TOP : 0;
+ 		
+     return 0;
+ }
+@@ -376,6 +379,8 @@ static void cavs_flush(AVCodecContext * avctx)
+ {
+     AVSContext *h = avctx->priv_data;
+     h->got_keyframe = 0;
++    /* reset internal pipeline state on flush (same as reference implementation) */
++    cavs_decoder_seq_header_reset_pipeline(h->p_decoder);
+ }
+ 
+ static int cavs_decoder_param_init( AVSContext *h )
+@@ -549,7 +554,8 @@ static int cavs_decode_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
+                     *got_frame = 1;
+                     av_frame_move_ref(frame, h->cur.f);
+                      
+-					frame->flags = h->b_interlaced ? AV_FRAME_FLAG_INTERLACED : 0;
++					frame->flags = (h->b_interlaced ? AV_FRAME_FLAG_INTERLACED_TOP : 0)
++				                   | (frame->pict_type == AV_PICTURE_TYPE_I ? AV_FRAME_FLAG_KEY : 0);
+ 	
+                     return 0;
+                }
+@@ -563,7 +569,8 @@ static int cavs_decode_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
+                 decoder_get_cur_frame( h->DPB[0].f, &h->param );
+                 *got_frame = 1;
+                 av_frame_move_ref(frame, h->DPB[0].f);
+-				frame->flags = h->b_interlaced ? AV_FRAME_FLAG_INTERLACED : 0;
++				frame->flags = (h->b_interlaced ? AV_FRAME_FLAG_INTERLACED_TOP : 0)
++				                   | (frame->pict_type == AV_PICTURE_TYPE_I ? AV_FRAME_FLAG_KEY : 0);
+             }
+         }
+ 
+@@ -702,7 +709,8 @@ static int cavs_decode_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
+                         {
+                             return ret;
+                         }
+-						frame->flags = h->b_interlaced ? AV_FRAME_FLAG_INTERLACED : 0;
++						frame->flags = (h->b_interlaced ? AV_FRAME_FLAG_INTERLACED_TOP : 0)
++				                   | (frame->pict_type == AV_PICTURE_TYPE_I ? AV_FRAME_FLAG_KEY : 0);
+                     }
+                     else
+                     {
+@@ -716,7 +724,8 @@ static int cavs_decode_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
+                     if(h->output_type == AV_PICTURE_TYPE_B && *got_frame == 1)
+                     {   
+                         av_frame_move_ref(frame, h->cur.f);
+-						frame->flags = h->b_interlaced ? AV_FRAME_FLAG_INTERLACED : 0;
++						frame->flags = (h->b_interlaced ? AV_FRAME_FLAG_INTERLACED_TOP : 0)
++				                   | (frame->pict_type == AV_PICTURE_TYPE_I ? AV_FRAME_FLAG_KEY : 0);
+                     } 
+                 }
+             }
+@@ -730,7 +739,8 @@ static int cavs_decode_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
+                         {
+                             return ret;
+                         }
+-						frame->flags = h->b_interlaced ? AV_FRAME_FLAG_INTERLACED : 0;
++						frame->flags = (h->b_interlaced ? AV_FRAME_FLAG_INTERLACED_TOP : 0)
++				                   | (frame->pict_type == AV_PICTURE_TYPE_I ? AV_FRAME_FLAG_KEY : 0);
+                     }
+                     else
+                     {
+@@ -743,7 +753,8 @@ static int cavs_decode_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
+ 
+                             *got_frame = 1;
+                             av_frame_move_ref(frame, h->cur.f);
+-							frame->flags = h->b_interlaced ? AV_FRAME_FLAG_INTERLACED : 0;
++							frame->flags = (h->b_interlaced ? AV_FRAME_FLAG_INTERLACED_TOP : 0)
++				                   | (frame->pict_type == AV_PICTURE_TYPE_I ? AV_FRAME_FLAG_KEY : 0);
+                         }
+                         else
+                         {
+@@ -756,7 +767,8 @@ static int cavs_decode_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
+                     if(*got_frame == 1)
+                     {   
+                         av_frame_move_ref(frame, h->cur.f);
+-						frame->flags = h->b_interlaced ? AV_FRAME_FLAG_INTERLACED : 0;
++						frame->flags = (h->b_interlaced ? AV_FRAME_FLAG_INTERLACED_TOP : 0)
++				                   | (frame->pict_type == AV_PICTURE_TYPE_I ? AV_FRAME_FLAG_KEY : 0);
+                     }
+                 }
+             }
