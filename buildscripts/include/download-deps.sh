@@ -26,9 +26,8 @@ fi
 
 # apply the patches shipped in patches/ on top of the fork: the DRA
 # (GB/T 22726-2008, DTMB digital TV audio) decoder port — not merged into
-# FFmpeg-AVSPlus upstream yet — plus cavs crash fixes backported from
-# upstream FFmpeg (9c2aabaa3, d85cdd259). Idempotent: each patch is skipped
-# when already applied.
+# FFmpeg-AVSPlus upstream yet. Idempotent: each patch is skipped when
+# already applied.
 for patch in "$(cd .. && pwd)"/patches/*.patch; do
 	if ! git -C ffmpeg apply --reverse --check "$patch" 2>/dev/null; then
 		git -C ffmpeg apply "$patch"

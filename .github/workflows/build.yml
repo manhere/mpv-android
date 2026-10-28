@@ -41,6 +41,20 @@ jobs:
         run: |
           buildscripts/include/ci.sh build
 
+      # Unstripped copies of the native libs (Gradle strips libs when packing
+      # the APKs). Used to symbolize crash backtraces / tombstones offline.
+      - name: Collect unstripped native libs
+        run: |
+          mkdir -p native-symbols/arm64-v8a native-symbols/armeabi-v7a
+          cp buildscripts/prefix/arm64/lib/*.so native-symbols/arm64-v8a/
+          cp buildscripts/prefix/armv7l/lib/*.so native-symbols/armeabi-v7a/
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mpv-android-native-symbols
+          path: native-symbols
+          archive: false
+
       - uses: actions/upload-artifact@v7
         with:
           name: mpv-android-armeabi-v7a

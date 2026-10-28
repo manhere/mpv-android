@@ -38,10 +38,10 @@ v_davs2_repo=https://github.com/saindriches/davs2
 v_davs2=f50435051b72c168c2b566c544e27fcff71ba61a
 
 ## ffmpeg patches (see buildscripts/patches/): the DRA (GB/T 22726-2008,
-# DTMB digital TV audio) decoder port plus cavs crash fixes backported from
-# upstream FFmpeg; applied to the ffmpeg checkout in include/download-deps.sh.
+# DTMB digital TV audio) decoder port; applied to the ffmpeg checkout in
+# include/download-deps.sh.
 # Bump to invalidate the CI cache.
-v_ffmpeg_patch=4
+v_ffmpeg_patch=5
 
 
 ## Dependency tree
