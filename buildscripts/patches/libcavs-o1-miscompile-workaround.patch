@@ -1,0 +1,14 @@
+--- a/libavcodec/Makefile
++++ b/libavcodec/Makefile
+@@ -1414,2 +1414,11 @@
+ $(SUBDIR)sinewin.o: $(SUBDIR)sinewin_tables.h
+ endif
++
++# Workaround for a miscompile of this huge single-file decoder by NDK r29
++# clang at -O2: after cavs_init_slice_for_aec is inlined into
++# cavs_get_slice_aec, the cavs_cabac_start_decoding call following
++# cavs_cabac_context_init() is dropped and execution falls through into
++# get_mb_p_aec_opt. Its error path (return -1) then re-enters the function
++# via the saved LR (= its own entry) with x0=-1 and faults on p->i_mb_type
++# (SIGSEGV at p+0x8f0). Build at -O1 to keep the control flow intact.
++$(SUBDIR)libcavs.o: CFLAGS += -O1
