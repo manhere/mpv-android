@@ -1,0 +1,72 @@
+diff --git a/libavcodec/libcavs.c b/libavcodec/libcavs.c
+index f7b8e53..af40a11 100644
+--- a/libavcodec/libcavs.c
++++ b/libavcodec/libcavs.c
+@@ -4466,42 +4466,6 @@ static int cavs_check_level_id( uint8_t level_id )
+     return 0;
+ }
+ 
+-static int validResu[][2] = 
+-{
+-	{128,96}, //0
+-	{176,144}, //1
+-	{320,240}, //2
+-	{640,480}, //3
+-	{720,480}, //4
+-	{720,576}, //6
+-	{800,480}, //7
+-	{1280,720}, //8
+-	{1440,1080}, //9
+-	{1440,1080}, //10
+-	{1920,1080}, //11
+-	{1920,1088}, //12
+-	{960,1080},//13
+-	{960,1088}, //14
+-	{544, 576},	//15
+-	{528, 576},	//16
+-	{480, 576},	//17
+-	{704, 576},
+-	{-1,-1}
+-};
+-static int cavs_check_resolution(int width, int height)
+-{
+-	int i = 0;
+-	for(i=0; i<32; i++)
+-	{
+-		if (validResu[i][0] < 0) {
+-			break;
+-		}
+-		if(validResu[i][0]==width && validResu[i][1]==height)
+-			return 0;
+-	}
+-	return -1;
+-}
+-
+ int cavs_get_video_sequence_header(cavs_bitstream *s,cavs_video_sequence_header *h)
+ {
+ 	uint32_t   width, height;
+@@ -4530,10 +4494,6 @@ int cavs_get_video_sequence_header(cavs_bitstream *s,cavs_video_sequence_header
+     {
+         return -1;    
+     }
+-	if(cavs_check_resolution(width, height))
+-	{
+-		return -1;
+-	}
+ 
+     h->i_chroma_format = cavs_bitstream_get_bits(s, 2);
+     if( h->i_chroma_format != 1 )
+diff --git a/libavcodec/libcavsdec.c b/libavcodec/libcavsdec.c
+index 6027141..92deba1 100644
+--- a/libavcodec/libcavsdec.c
++++ b/libavcodec/libcavsdec.c
+@@ -328,7 +328,8 @@ static int cavs_decode_seq_header(AVSContext *h)
+     
+     cavs_decoder_process( h->p_decoder, h->buf, h->length );
+     
+-    cavs_decoder_get_seq( h->p_decoder,  &si);
++    if (cavs_decoder_get_seq( h->p_decoder,  &si) < 0)
++        return AVERROR_INVALIDDATA; /* sequence header not parsed yet */
+ 
+     h->b_interlaced = si.b_interlaced;
+     h->profile = si.profile;
