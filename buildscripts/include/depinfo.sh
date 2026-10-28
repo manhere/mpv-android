@@ -41,7 +41,7 @@ v_davs2=f50435051b72c168c2b566c544e27fcff71ba61a
 # DTMB digital TV audio) decoder port; applied to the ffmpeg checkout in
 # include/download-deps.sh.
 # Bump to invalidate the CI cache.
-v_ffmpeg_patch=6
+v_ffmpeg_patch=7
 
 
 ## Dependency tree

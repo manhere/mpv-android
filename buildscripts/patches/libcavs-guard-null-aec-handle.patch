@@ -1,0 +1,64 @@
+diff --git a/libavcodec/libcavs.c b/libavcodec/libcavs.c
+index f7b8e53..a84f105 100644
+--- a/libavcodec/libcavs.c
++++ b/libavcodec/libcavs.c
+@@ -14582,6 +14582,8 @@ static int decode_one_frame_far(void *p_decoder, frame_pack *frame, cavs_param *
+ 
+     /* FIXIT : should init handle here */
+     p_aec = p_m->unused[0];
++    if (p_aec == NULL)
++        return CAVS_ERROR; /* no AEC handle: sequence header not parsed yet */
+     p = p_aec; /* switch to aec threads */
+ 
+     /* decode slice */
+@@ -15488,6 +15490,8 @@ static int cavs_field_decode(void *p_decoder, frame_pack *field, cavs_param *par
+ 
+     /* init aec handle */
+     p_aec = p_m->unused[0];
++    if (p_aec == NULL)
++        return CAVS_ERROR; /* no AEC handle: sequence header not parsed yet */
+     p = p_aec;
+     p_aec->b_bottom = 0; /* init bottom flag */
+     p_aec->i_frame_decoded = p_m->i_frame_decoded; //just for debug
+@@ -15930,6 +15934,8 @@ static int cavs_field_decode_far(void *p_decoder, frame_pack *field, cavs_param
+ 
+     /* init aec handle */
+     p_aec = p_m->unused[0];
++    if (p_aec == NULL)
++        return CAVS_ERROR; /* no AEC handle: sequence header not parsed yet */
+     p = p_aec;
+     p_aec->b_bottom = 0; /* init bottom flag */
+     p_aec->i_frame_decoded = p_m->i_frame_decoded; //just for debug
+diff --git a/libavcodec/libcavsdec.c b/libavcodec/libcavsdec.c
+index 6027141..b2a43f0 100644
+--- a/libavcodec/libcavsdec.c
++++ b/libavcodec/libcavsdec.c
+@@ -594,7 +594,8 @@ static int cavs_decode_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
+         case CAVS_START_CODE:
+             cavs_decoder_init_stream( h->p_decoder, buf_ptr - 4, decode_size);
+             cavs_decoder_get_one_nal( h->p_decoder, h->buf, &h->length );
+-            cavs_decode_seq_header( h );
++            if (cavs_decode_seq_header( h ) < 0)
++                break; /* invalid sequence header: skip init, retry on next one */
+ 
+             /* init h->param */
+             cavs_decoder_param_init( h );
+@@ -640,6 +641,8 @@ static int cavs_decode_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
+             }
+             break;
+         case PIC_I_START_CODE:
++            if (!h->param.seq_header_flag)
++                break; /* no valid sequence header yet: cannot decode */
+             cavs_decoder_init_stream( h->p_decoder, buf_ptr - 4, decode_size);
+             cavs_decoder_get_one_nal( h->p_decoder, h->buf, &h->length ); 
+             if (!h->got_keyframe) {
+@@ -675,8 +678,7 @@ static int cavs_decode_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fra
+                 break;
+             }
+ #else
+-            cavs_decode_pic(h, &ret);
+-            if( ret == CAVS_ERROR )
++            if( cavs_decode_pic(h, &ret) || ret == CAVS_ERROR )
+             {
+                 h->last_frame_error = 1;
+                 h->got_keyframe = 0;
